@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/Users/vanev/OneDrive - Universidad de la Sabana/U/6to Semestre/Programación Aplicada/Proyecto-bienestar\" && grep -o '\"# [^\"]*' caracterización.ipynb | head -20)",
+      "Read(//c/c/Users/vanev/OneDrive - Universidad de la Sabana/U/6to Semestre/Programación Aplicada/Proyecto-bienestar/**)"
+    ]
+  }
+}
