@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienestar Unisabana — Alertas Tempranas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- =============================================
+       PANTALLA 1: Bienvenida
+       ============================================= -->
+  <div id="screen-welcome" class="screen active">
+    <div class="card">
+      <div class="logo">
+        <div class="logo-icon">🎓</div>
+        <h1>Bienestar Unisabana</h1>
+        <p class="subtitle">Tracker de Alertas Tempranas</p>
+      </div>
+      <p class="intro-text">
+        Este cuestionario nos ayuda a entender cómo estás viviendo tu primer semestre,
+        para conectarte con el apoyo que necesitas en el momento justo.
+      </p>
+      <form id="form-welcome" novalidate>
+        <div class="form-group">
+          <label for="student-name">Tu nombre completo</label>
+          <input
+            type="text"
+            id="student-name"
+            placeholder="Ej. María Gómez"
+            autocomplete="given-name"
+            required
+          >
+        </div>
+        <div class="form-group">
+          <label for="student-semester">Semestre actual</label>
+          <select id="student-semester" required>
+            <option value="">Selecciona tu semestre</option>
+            <option value="1">Primer semestre</option>
+            <option value="2">Segundo semestre</option>
+            <option value="3">Tercer semestre</option>
+            <option value="4">Cuarto semestre</option>
+          </select>
+        </div>
+        <div id="welcome-error" class="field-error hidden">
+          Por favor completa tu nombre y semestre para continuar.
+        </div>
+        <button type="submit" class="btn btn-primary">Comenzar cuestionario →</button>
+      </form>
+      <p class="privacy-note">🔒 Tus respuestas son confidenciales y solo se usan para orientarte.</p>
+    </div>
+  </div>
+
+  <!-- =============================================
+       PANTALLA 2: Quiz (8 preguntas, una a la vez)
+       ============================================= -->
+  <div id="screen-quiz" class="screen">
+    <div class="quiz-header">
+      <div class="quiz-meta">
+        <span id="quiz-category" class="category-badge"></span>
+        <span id="quiz-counter" class="question-counter"></span>
+      </div>
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="quiz-body">
+      <div class="card">
+        <h2 id="quiz-question"></h2>
+        <div id="quiz-options" class="options-list" role="group" aria-label="Opciones de respuesta"></div>
+        <button id="btn-next" class="btn btn-primary" disabled>Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       PANTALLA 3: Resultado y recursos
+       ============================================= -->
+  <div id="screen-results" class="screen">
+    <div class="card results-card">
+      <div id="result-header" class="result-header">
+        <div id="result-icon" class="result-icon" aria-hidden="true"></div>
+        <h2 id="result-title"></h2>
+        <p id="result-subtitle"></p>
+      </div>
+
+      <div class="resources-section">
+        <h3>Recursos disponibles para ti</h3>
+        <ul id="resources-list"></ul>
+      </div>
+
+      <button id="btn-restart" class="btn btn-outline">Hacer el cuestionario otra vez</button>
+    </div>
+  </div>
+
+  <!-- =============================================
+       BOTÓN DE PÁNICO — siempre visible
+       ============================================= -->
+  <button
+    id="panic-btn"
+    class="panic-btn"
+    aria-label="Necesito ayuda de emergencia — Contactar Bienestar Unisabana"
+  >
+    <span class="panic-icon" aria-hidden="true">🆘</span>
+    <span class="panic-label">Necesito ayuda</span>
+  </button>
+
+  <!-- =============================================
+       MODAL DE PÁNICO
+       ============================================= -->
+  <div
+    id="panic-modal"
+    class="modal-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+  >
+    <div class="modal">
+      <button
+        class="modal-close"
+        id="btn-modal-close"
+        aria-label="Cerrar ventana de crisis"
+      >&times;</button>
+
+      <h2 id="modal-title">🆘 Contactos de Crisis — Unisabana</h2>
+      <p class="modal-intro">
+        Si estás pasando por un momento difícil, hay personas en Unisabana listas para escucharte ahora mismo.
+      </p>
+
+      <!-- Contactos reales de Tu Línea Amiga -->
+      <div class="contacts" aria-label="Contactos de Bienestar Unisabana">
+        <div class="contact-card">
+          <div class="contact-icon" aria-hidden="true">📞</div>
+          <div>
+            <strong>Tu Línea Amiga — Teléfono</strong>
+            <p>(091) 861-5555 ext. 20223</p>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon" aria-hidden="true">✉️</div>
+          <div>
+            <strong>Tu Línea Amiga — Correo</strong>
+            <p>tulineamiga20@unisabana.edu.co</p>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon" aria-hidden="true">📍</div>
+          <div>
+            <strong>Atención presencial — Sin cita previa</strong>
+            <p>Edificio F, Campus Universitario</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de alerta simulado -->
+      <div class="alert-form">
+        <h3>Enviar una alerta a Bienestar</h3>
+        <p class="form-note">
+          Cuéntanos brevemente cómo estás. Un asesor de Bienestar Unisabana se comunicará contigo pronto.
+        </p>
+        <textarea
+          id="alert-message"
+          placeholder="Escribe aquí cómo te sientes o qué está pasando..."
+          rows="4"
+          aria-label="Mensaje para Bienestar Unisabana"
+        ></textarea>
+        <button id="btn-send-alert" class="btn btn-danger">Enviar alerta a Bienestar</button>
+        <div id="alert-confirmation" class="alert-confirmation hidden" role="status">
+          ✅ Tu mensaje fue recibido. Un asesor de Bienestar se comunicará contigo a la brevedad.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- model.js es generado por train_model.py — debe cargarse antes de app.js -->
+  <script src="model.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
