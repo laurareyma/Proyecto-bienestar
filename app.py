@@ -90,7 +90,7 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     st.markdown("---")
-    st.caption("Programación Aplicada · 6.° Semestre · 2026")
+    st.caption("Programación Aplicada - Proyecto DBEE")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
