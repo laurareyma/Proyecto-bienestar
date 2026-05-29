@@ -15,23 +15,72 @@ st.set_page_config(
 # ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-[data-testid="stSidebar"] { background-color: #001C64; }
-[data-testid="stSidebar"] * { color: #e0e0e0 !important; }
-.metric-box {
-    background: linear-gradient(135deg, #1e3a5f, #2d6a9f);
-    border-radius: 12px; padding: 18px 14px; text-align: center;
-    color: white; margin-bottom: 8px;
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background-color: #001C64;
+    border-right: 3px solid #193F9E;
 }
-.metric-box h2 { font-size: 2rem; margin: 0; }
+[data-testid="stSidebar"] * { color: #FFFFFF !important; }
+[data-testid="stSidebar"] hr { border-color: #193F9E !important; }
+
+/* ── Metric boxes ── */
+.metric-box {
+    background: linear-gradient(135deg, #001C64, #193F9E);
+    border-radius: 12px; padding: 18px 14px; text-align: center;
+    color: #FFFFFF; margin-bottom: 8px;
+    border: 1px solid #9DC4FF;
+    box-shadow: 0 2px 8px rgba(0,28,100,0.18);
+}
+.metric-box h2 { font-size: 2rem; margin: 0; color: #FFFAE0; }
 .metric-box p  { font-size: 0.85rem; margin: 0; opacity: 0.85; }
-.section-title { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; margin-bottom: 4px; }
-.divider { border: none; border-top: 2px solid #e0e0e0; margin: 12px 0 20px; }
+
+/* ── Typography ── */
+.section-title {
+    font-size: 1.5rem; font-weight: 700;
+    color: #001C64; margin-bottom: 4px;
+    border-left: 4px solid #26A3DD; padding-left: 10px;
+}
+h1, h2, h3 { color: #001C64 !important; }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 2px solid #9DC4FF; margin: 12px 0 20px; }
+
+/* ── Links ── */
+a { color: #26A3DD !important; }
+a:hover { color: #70C3E9 !important; }
+
+/* ── Tabs ── */
+[data-testid="stTab"] { color: #001C64; font-weight: 600; }
+[aria-selected="true"] { border-bottom-color: #001C64 !important; }
+
+/* ── Buttons ── */
+.stButton > button {
+    background-color: #001C64; color: #FFFFFF;
+    border: none; border-radius: 6px;
+}
+.stButton > button:hover {
+    background-color: #193F9E; color: #FFFFFF;
+}
 </style>
 """, unsafe_allow_html=True)
 
 BASE = os.path.dirname(__file__)
 DATA = os.path.join(BASE, "Data")
 GRAPHICS = os.path.join(BASE, "src", "graphics")
+
+# Paleta institucional Universidad de la Sabana
+C_AZUL_SABANA    = "#001C64"
+C_AZUL_CONTRASTE = "#193F9E"
+C_AZUL_CLARO     = "#9DC4FF"
+C_AZUL_CIELO     = "#E0EDFF"
+C_AMARILLO       = "#FFFAE0"
+C_ACENTO         = "#26A3DD"
+C_ACENTO_HOVER   = "#70C3E9"
+C_GRIS_OSCURO    = "#6D6D6D"
+
+SABANA_SCALE       = [[0, C_AZUL_CIELO], [0.5, C_AZUL_CLARO], [1, C_AZUL_SABANA]]
+SABANA_QUALITATIVE = [C_AZUL_CONTRASTE, C_ACENTO, C_AZUL_CLARO,
+                      C_AZUL_SABANA, C_ACENTO_HOVER, C_GRIS_OSCURO]
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -273,6 +322,7 @@ elif page == "👥 Perfiles Estudiantiles":
                     title="Distribución de participación total por perfil",
                     labels={"participacion_total": "Participación total", "perfil": "Perfil"},
                     template="plotly_white",
+                    color_discrete_sequence=SABANA_QUALITATIVE,
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -352,7 +402,7 @@ elif page == "🔍 Exploración Interactiva":
             labels={"ano": "Año", "registros": "Registros de asistencia"},
             template="plotly_white",
             color="registros",
-            color_continuous_scale="Blues",
+            color_continuous_scale=SABANA_SCALE,
         )
         fig1.update_layout(showlegend=False, coloraxis_showscale=False)
         st.plotly_chart(fig1, use_container_width=True)
@@ -373,7 +423,7 @@ elif page == "🔍 Exploración Interactiva":
             labels={"jefatura": "Jefatura", "registros": "Registros"},
             template="plotly_white",
             color="registros",
-            color_continuous_scale="Teal",
+            color_continuous_scale=SABANA_SCALE,
         )
         fig2.update_layout(showlegend=False, coloraxis_showscale=False, height=400)
         st.plotly_chart(fig2, use_container_width=True)
@@ -390,7 +440,7 @@ elif page == "🔍 Exploración Interactiva":
                 labels={pam_col: "PAM"},
                 title="Distribución PAM",
                 template="plotly_white",
-                color_discrete_sequence=["#2d6a9f"],
+                color_discrete_sequence=[C_AZUL_CONTRASTE],
             )
             st.plotly_chart(fig3, use_container_width=True)
         with c2:
@@ -399,7 +449,7 @@ elif page == "🔍 Exploración Interactiva":
                 labels={pcp_col: "PCP"},
                 title="Distribución PCP",
                 template="plotly_white",
-                color_discrete_sequence=["#1e8e7e"],
+                color_discrete_sequence=[C_ACENTO],
             )
             st.plotly_chart(fig4, use_container_width=True)
 
@@ -412,7 +462,7 @@ elif page == "🔍 Exploración Interactiva":
             por_sexo, names="sexo", values="count",
             hole=0.4,
             template="plotly_white",
-            color_discrete_sequence=px.colors.qualitative.Set2,
+            color_discrete_sequence=SABANA_QUALITATIVE,
         )
         st.plotly_chart(fig5, use_container_width=True)
 
