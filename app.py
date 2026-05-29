@@ -44,7 +44,7 @@ st.markdown("""
     font-size: 1.65rem;
     font-weight: 700;
     margin: 0;
-    color: #FFFFFF;
+    color: #FFFFFF !important;
     white-space: nowrap;
     line-height: 1.2;
 }
@@ -54,6 +54,7 @@ st.markdown("""
     opacity: 0.88;
     line-height: 1.3;
     max-width: 140px;
+    color: #FFFFFF !important;
 }
 
 /* ── Typography ── */
