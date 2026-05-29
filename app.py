@@ -26,13 +26,35 @@ st.markdown("""
 /* ── Metric boxes ── */
 .metric-box {
     background: linear-gradient(135deg, #001C64, #193F9E);
-    border-radius: 12px; padding: 18px 14px; text-align: center;
-    color: #FFFFFF; margin-bottom: 8px;
+    border-radius: 12px;
+    padding: 20px 12px 16px;
+    text-align: center;
+    color: #FFFFFF;
+    margin-bottom: 8px;
     border: 1px solid #9DC4FF;
     box-shadow: 0 2px 8px rgba(0,28,100,0.18);
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
 }
-.metric-box h2 { font-size: 2rem; margin: 0; color: #FFFAE0; }
-.metric-box p  { font-size: 0.85rem; margin: 0; opacity: 0.85; }
+.metric-box h2 {
+    font-size: 1.65rem;
+    font-weight: 700;
+    margin: 0;
+    color: #FFFAE0;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+.metric-box p {
+    font-size: 0.78rem;
+    margin: 0;
+    opacity: 0.88;
+    line-height: 1.3;
+    max-width: 140px;
+}
 
 /* ── Typography ── */
 .section-title {
