@@ -15,7 +15,7 @@ st.set_page_config(
 # ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-[data-testid="stSidebar"] { background-color: #0f1117; }
+[data-testid="stSidebar"] { background-color: #001C64; }
 [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
 .metric-box {
     background: linear-gradient(135deg, #1e3a5f, #2d6a9f);
