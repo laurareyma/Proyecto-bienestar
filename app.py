@@ -129,6 +129,60 @@ def train_predictor(_perfiles):
         return None, []
 
 
+@st.cache_data(show_spinner="Entrenando regresión logística…")
+def train_logistic_model(_caract, _asistencia):
+    try:
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.preprocessing import OneHotEncoder
+        from sklearn.compose import ColumnTransformer
+        from sklearn.pipeline import Pipeline
+        from sklearn.model_selection import train_test_split
+        from sklearn.metrics import classification_report
+
+        df_p1 = _caract.merge(
+            _asistencia[["codigo", "actividad"]].dropna(),
+            on="codigo", how="inner"
+        )
+
+        feat_cols = ["sexo", "ciudad_direccion_fisica", PAM_COL]
+        target = "actividad"
+        missing = [c for c in feat_cols + [target] if c not in df_p1.columns]
+        if missing:
+            return None, None, f"Columnas faltantes: {missing}"
+
+        df_p1 = df_p1[feat_cols + [target]].dropna()
+        if len(df_p1) < 50:
+            return None, None, "Datos insuficientes tras filtrar NaN."
+
+        X = df_p1[feat_cols]
+        y = df_p1[target]
+
+        cat_lr = ["sexo", "ciudad_direccion_fisica"]
+        num_lr = [PAM_COL]
+
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ("cat", OneHotEncoder(drop="first", handle_unknown="ignore"), cat_lr),
+                ("num", "passthrough", num_lr),
+            ]
+        )
+        modelo = Pipeline([
+            ("preprocessing", preprocessor),
+            ("logreg", LogisticRegression(max_iter=1000, random_state=42)),
+        ])
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+        modelo.fit(X_train, y_train)
+        y_pred = modelo.predict(X_test)
+
+        report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
+        return modelo, report_dict, None
+    except Exception as e:
+        return None, None, str(e)
+
+
 def img(name):
     path = os.path.join(GRAPHICS, name)
     return Image.open(path) if os.path.exists(path) else None
@@ -168,6 +222,7 @@ def sabana_fig(fig, height=None):
 try:
     asistencia, caract, perfiles = load_all()
     modelo_pred, feat_cols_pred = train_predictor(perfiles)
+    modelo_logreg, report_logreg, error_logreg = train_logistic_model(caract, asistencia)
     ok = True
 except Exception as e:
     st.error(f"No se pudieron cargar los datos: {e}")
@@ -514,8 +569,8 @@ elif page == "🤖 Modelos Predictivos":
     )
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4 = st.tabs(
-        ["Comparación", "Random Forest", "Red Neuronal (MLP)", "🎯 Simulador"]
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["Comparación", "Random Forest", "Red Neuronal (MLP)", "🔵 Regresión Logística", "🎯 Simulador"]
     )
 
     with tab1:
@@ -533,6 +588,61 @@ elif page == "🤖 Modelos Predictivos":
         show_img("mlp_curvas_aprendizaje.png", "Curvas de aprendizaje — MLP")
 
     with tab4:
+        st.markdown("<div class='section-title'>Regresión Logística</div>",
+                    unsafe_allow_html=True)
+        st.markdown(
+            "Clasifica la **actividad** de bienestar a la que asistirá un estudiante "
+            "a partir de su sexo, ciudad de residencia y promedio acumulado (PAM)."
+        )
+
+        if error_logreg:
+            st.error(f"No se pudo entrenar el modelo: {error_logreg}")
+        elif report_logreg is None:
+            st.warning("El modelo no está disponible.")
+        else:
+            metrics_rows = {
+                clase: v for clase, v in report_logreg.items()
+                if clase not in ("accuracy", "macro avg", "weighted avg")
+                and isinstance(v, dict)
+            }
+            df_report = pd.DataFrame(metrics_rows).T[["precision", "recall", "f1-score", "support"]]
+            df_report.index.name = "Actividad"
+            df_report = df_report.sort_values("support", ascending=False)
+
+            st.markdown("#### Reporte de clasificación por actividad")
+            st.dataframe(df_report.style.format({
+                "precision": "{:.2f}", "recall": "{:.2f}",
+                "f1-score": "{:.2f}", "support": "{:.0f}",
+            }), use_container_width=True)
+
+            wa = report_logreg.get("weighted avg", {})
+            ma = report_logreg.get("macro avg", {})
+            c1, c2, c3 = st.columns(3)
+            c1.markdown(
+                f"<div class='metric-box'><h2>{report_logreg.get('accuracy', 0):.2%}</h2>"
+                "<p>Accuracy global</p></div>", unsafe_allow_html=True
+            )
+            c2.markdown(
+                f"<div class='metric-box'><h2>{wa.get('f1-score', 0):.2f}</h2>"
+                "<p>F1 ponderado</p></div>", unsafe_allow_html=True
+            )
+            c3.markdown(
+                f"<div class='metric-box'><h2>{ma.get('f1-score', 0):.2f}</h2>"
+                "<p>F1 macro</p></div>", unsafe_allow_html=True
+            )
+
+            st.markdown("#### F1-score por actividad (top 15)")
+            top_f1 = df_report.head(15).reset_index()
+            fig_lr = px.bar(
+                top_f1, x="f1-score", y="Actividad", orientation="h",
+                text_auto=".2f", template="plotly_white",
+                labels={"f1-score": "F1-score"},
+                color="f1-score", color_continuous_scale=SABANA_SCALE,
+            )
+            sabana_fig(fig_lr.update_layout(coloraxis_showscale=False), height=480)
+            st.plotly_chart(fig_lr, use_container_width=True)
+
+    with tab5:
         st.markdown("<div class='section-title'>Simulador de predicción</div>",
                     unsafe_allow_html=True)
         st.markdown(
