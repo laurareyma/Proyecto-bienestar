@@ -103,8 +103,22 @@ def load_all():
     caract    = pd.read_csv(os.path.join(DATA, "caracterizacion_limpia.csv"))
     perfiles  = pd.read_csv(os.path.join(DATA, "perfiles_estudiantiles.csv"))
 
+    # Normalizar columnas del archivo 2023-2025 al esquema común
+    col_map = {
+        "ciclo_lectivo":              "periodo",
+        "estrategia_para_acreditacion": "estrategia_programa_o_servicio",
+        "tipo_de_actividad":          "actividad",
+    }
+    asist_new = asist_new.rename(columns={k: v for k, v in col_map.items() if k in asist_new.columns})
+
     if "ano" not in asist_new.columns:
-        asist_new["ano"] = asist_new["periodo"].astype(str).str[:4].astype(int, errors="ignore")
+        if "periodo" in asist_new.columns:
+            asist_new["ano"] = pd.to_numeric(
+                asist_new["periodo"].astype(str).str[:4], errors="coerce"
+            ).astype("Int64")
+        else:
+            asist_new["ano"] = pd.NA
+
     common = ["ano", "periodo", "jefatura", "estrategia_programa_o_servicio", "actividad", "codigo"]
     asistencia = pd.concat(
         [asist_old[[c for c in common if c in asist_old.columns]],
