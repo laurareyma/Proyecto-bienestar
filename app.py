@@ -233,6 +233,12 @@ def sabana_fig(fig, height=None):
 
 
 # ── load ──────────────────────────────────────────────────────────────────────
+modelo_pred = None
+feat_cols_pred = []
+modelo_logreg = None
+report_logreg = None
+error_logreg = None
+
 try:
     asistencia, caract, perfiles = load_all()
     modelo_pred, feat_cols_pred = train_predictor(perfiles)
