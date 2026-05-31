@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from PIL import Image
 import os
 
@@ -76,7 +75,6 @@ BASE = os.path.dirname(__file__)
 DATA = os.path.join(BASE, "Data")
 GRAPHICS = os.path.join(BASE, "src", "graphics")
 
-# Paleta institucional Universidad de la Sabana
 C_AZUL_SABANA    = "#001C64"
 C_AZUL_CONTRASTE = "#193F9E"
 C_AZUL_CLARO     = "#9DC4FF"
@@ -84,7 +82,6 @@ C_AZUL_CIELO     = "#E0EDFF"
 C_ACENTO         = "#26A3DD"
 C_ACENTO_HOVER   = "#70C3E9"
 C_GRIS_OSCURO    = "#6D6D6D"
-C_ERROR          = "#FF2114"
 
 SABANA_SCALE       = [[0, C_AZUL_CIELO], [0.5, C_AZUL_CLARO], [1, C_AZUL_SABANA]]
 SABANA_QUALITATIVE = [C_AZUL_CONTRASTE, C_ACENTO, C_AZUL_CLARO,
@@ -103,11 +100,10 @@ def load_all():
     caract    = pd.read_csv(os.path.join(DATA, "caracterizacion_limpia.csv"))
     perfiles  = pd.read_csv(os.path.join(DATA, "perfiles_estudiantiles.csv"))
 
-    # Normalizar columnas del archivo 2023-2025 al esquema común
     col_map = {
-        "ciclo_lectivo":              "periodo",
+        "ciclo_lectivo":                "periodo",
         "estrategia_para_acreditacion": "estrategia_programa_o_servicio",
-        "tipo_de_actividad":          "actividad",
+        "tipo_de_actividad":            "actividad",
     }
     asist_new = asist_new.rename(columns={k: v for k, v in col_map.items() if k in asist_new.columns})
 
@@ -128,75 +124,6 @@ def load_all():
     return asistencia, caract, perfiles
 
 
-@st.cache_data(show_spinner="Entrenando modelo predictivo…")
-def train_predictor(_perfiles):
-    try:
-        from sklearn.linear_model import LinearRegression
-        feat_cols = [c for c in [PAM_COL, PCP_COL, CRED_COL] if c in _perfiles.columns]
-        target = "participacion_total"
-        if target not in _perfiles.columns or not feat_cols:
-            return None, feat_cols
-        df = _perfiles[feat_cols + [target]].dropna()
-        model = LinearRegression().fit(df[feat_cols].values, df[target].values)
-        return model, feat_cols
-    except Exception:
-        return None, []
-
-
-@st.cache_data(show_spinner="Entrenando regresión logística…")
-def train_logistic_model(_caract, _asistencia):
-    try:
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.preprocessing import OneHotEncoder
-        from sklearn.compose import ColumnTransformer
-        from sklearn.pipeline import Pipeline
-        from sklearn.model_selection import train_test_split
-        from sklearn.metrics import classification_report
-
-        df_p1 = _caract.merge(
-            _asistencia[["codigo", "actividad"]].dropna(),
-            on="codigo", how="inner"
-        )
-
-        feat_cols = ["sexo", "ciudad_direccion_fisica", PAM_COL]
-        target = "actividad"
-        missing = [c for c in feat_cols + [target] if c not in df_p1.columns]
-        if missing:
-            return None, None, f"Columnas faltantes: {missing}"
-
-        df_p1 = df_p1[feat_cols + [target]].dropna()
-        if len(df_p1) < 50:
-            return None, None, "Datos insuficientes tras filtrar NaN."
-
-        X = df_p1[feat_cols]
-        y = df_p1[target]
-
-        cat_lr = ["sexo", "ciudad_direccion_fisica"]
-        num_lr = [PAM_COL]
-
-        preprocessor = ColumnTransformer(
-            transformers=[
-                ("cat", OneHotEncoder(drop="first", handle_unknown="ignore"), cat_lr),
-                ("num", "passthrough", num_lr),
-            ]
-        )
-        modelo = Pipeline([
-            ("preprocessing", preprocessor),
-            ("logreg", LogisticRegression(max_iter=1000, random_state=42)),
-        ])
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        modelo.fit(X_train, y_train)
-        y_pred = modelo.predict(X_test)
-
-        report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
-        return modelo, report_dict, None
-    except Exception as e:
-        return None, None, str(e)
-
-
 def img(name):
     path = os.path.join(GRAPHICS, name)
     return Image.open(path) if os.path.exists(path) else None
@@ -211,7 +138,6 @@ def show_img(name, caption=""):
 
 
 def vc(df, col, label="Registros"):
-    """value_counts compatible con pandas antiguo y nuevo."""
     result = df.groupby(col).size().reset_index(name=label)
     result.columns = [col, label]
     return result
@@ -233,16 +159,8 @@ def sabana_fig(fig, height=None):
 
 
 # ── load ──────────────────────────────────────────────────────────────────────
-modelo_pred = None
-feat_cols_pred = []
-modelo_logreg = None
-report_logreg = None
-error_logreg = None
-
 try:
     asistencia, caract, perfiles = load_all()
-    modelo_pred, feat_cols_pred = train_predictor(perfiles)
-    modelo_logreg, report_logreg, error_logreg = train_logistic_model(caract, asistencia)
     ok = True
 except Exception as e:
     st.error(f"No se pudieron cargar los datos: {e}")
@@ -287,10 +205,10 @@ if page == "🏠 Inicio":
 
         c1, c2, c3, c4 = st.columns(4)
         for col, val, label in [
-            (c1, f"{n_asist:,}",              "Registros de asistencia"),
-            (c2, f"{n_est_car:,}",            "Estudiantes caracterizados"),
-            (c3, f"{int(anos[0])} – {int(anos[-1])}", "Periodo analizado"),
-            (c4, str(n_prog),                 "Programas académicos"),
+            (c1, f"{n_asist:,}",                       "Registros de asistencia"),
+            (c2, f"{n_est_car:,}",                     "Estudiantes caracterizados"),
+            (c3, f"{int(anos[0])} – {int(anos[-1])}",  "Periodo analizado"),
+            (c4, str(n_prog),                          "Programas académicos"),
         ]:
             col.markdown(
                 f"<div class='metric-box'><h2>{val}</h2><p>{label}</p></div>",
@@ -316,7 +234,7 @@ if page == "🏠 Inicio":
 **🤖 Modelos Predictivos**
 - Regresión lineal, Random Forest y MLP
 - Comparación de métricas de rendimiento
-- **Simulador interactivo de predicción**
+- Resultados e interpretabilidad del modelo
 
 **🔍 Exploración Interactiva**
 - Filtra por año, jefatura, sexo y programa
@@ -579,19 +497,17 @@ elif page == "👥 Perfiles Estudiantiles":
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# MODELOS PREDICTIVOS
+# MODELOS PREDICTIVOS — solo imágenes generadas en el notebook
 # ══════════════════════════════════════════════════════════════════════════════
 elif page == "🤖 Modelos Predictivos":
     st.title("Modelos Predictivos")
     st.markdown(
-        "Se entrenaron tres modelos para predecir la participación estudiantil en bienestar: "
-        "Regresión Lineal, Random Forest y Red Neuronal MLP."
+        "Resultados de los modelos entrenados para predecir la participación estudiantil "
+        "en bienestar: Regresión Lineal, Random Forest y Red Neuronal MLP."
     )
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["Comparación", "Random Forest", "Red Neuronal (MLP)", "🔵 Regresión Logística", "🎯 Simulador"]
-    )
+    tab1, tab2, tab3 = st.tabs(["Comparación", "Random Forest", "Red Neuronal (MLP)"])
 
     with tab1:
         show_img("comparacion_modelos.png", "Comparación de modelos — métricas de error")
@@ -606,122 +522,6 @@ elif page == "🤖 Modelos Predictivos":
 
     with tab3:
         show_img("mlp_curvas_aprendizaje.png", "Curvas de aprendizaje — MLP")
-
-    with tab4:
-        st.markdown("<div class='section-title'>Regresión Logística</div>",
-                    unsafe_allow_html=True)
-        st.markdown(
-            "Clasifica la **actividad** de bienestar a la que asistirá un estudiante "
-            "a partir de su sexo, ciudad de residencia y promedio acumulado (PAM)."
-        )
-
-        if error_logreg:
-            st.error(f"No se pudo entrenar el modelo: {error_logreg}")
-        elif report_logreg is None:
-            st.warning("El modelo no está disponible.")
-        else:
-            metrics_rows = {
-                clase: v for clase, v in report_logreg.items()
-                if clase not in ("accuracy", "macro avg", "weighted avg")
-                and isinstance(v, dict)
-            }
-            df_report = pd.DataFrame(metrics_rows).T[["precision", "recall", "f1-score", "support"]]
-            df_report.index.name = "Actividad"
-            df_report = df_report.sort_values("support", ascending=False)
-
-            st.markdown("#### Reporte de clasificación por actividad")
-            st.dataframe(df_report.style.format({
-                "precision": "{:.2f}", "recall": "{:.2f}",
-                "f1-score": "{:.2f}", "support": "{:.0f}",
-            }), use_container_width=True)
-
-            wa = report_logreg.get("weighted avg", {})
-            ma = report_logreg.get("macro avg", {})
-            c1, c2, c3 = st.columns(3)
-            c1.markdown(
-                f"<div class='metric-box'><h2>{report_logreg.get('accuracy', 0):.2%}</h2>"
-                "<p>Accuracy global</p></div>", unsafe_allow_html=True
-            )
-            c2.markdown(
-                f"<div class='metric-box'><h2>{wa.get('f1-score', 0):.2f}</h2>"
-                "<p>F1 ponderado</p></div>", unsafe_allow_html=True
-            )
-            c3.markdown(
-                f"<div class='metric-box'><h2>{ma.get('f1-score', 0):.2f}</h2>"
-                "<p>F1 macro</p></div>", unsafe_allow_html=True
-            )
-
-            st.markdown("#### F1-score por actividad (top 15)")
-            top_f1 = df_report.head(15).reset_index()
-            fig_lr = px.bar(
-                top_f1, x="f1-score", y="Actividad", orientation="h",
-                text_auto=".2f", template="plotly_white",
-                labels={"f1-score": "F1-score"},
-                color="f1-score", color_continuous_scale=SABANA_SCALE,
-            )
-            sabana_fig(fig_lr.update_layout(coloraxis_showscale=False), height=480)
-            st.plotly_chart(fig_lr, use_container_width=True)
-
-    with tab5:
-        st.markdown("<div class='section-title'>Simulador de predicción</div>",
-                    unsafe_allow_html=True)
-        st.markdown(
-            "Ajusta los indicadores académicos del estudiante y obtén una estimación "
-            "de su **participación total** esperada en programas de Bienestar."
-        )
-
-        if not ok or modelo_pred is None:
-            st.warning("El modelo no pudo cargarse. Verifica que los datos estén disponibles.")
-        else:
-            col_meta = {
-                PAM_COL:  ("Promedio Acumulado (PAM)",  0.1),
-                PCP_COL:  ("Promedio Semestral (PCP)",  0.1),
-                CRED_COL: ("Créditos inscritos",         1.0),
-            }
-            inputs = {}
-            sliders = st.columns(len(feat_cols_pred))
-            for i, col in enumerate(feat_cols_pred):
-                label, step = col_meta.get(col, (col, 0.1))
-                mn   = float(perfiles[col].min())
-                mx   = float(perfiles[col].max())
-                mean = float(round(perfiles[col].mean(), 2))
-                inputs[col] = sliders[i].slider(label, min_value=mn, max_value=mx,
-                                                 value=mean, step=step)
-
-            pred = max(0.0, round(
-                float(modelo_pred.predict([[inputs[c] for c in feat_cols_pred]])[0]), 1
-            ))
-
-            st.markdown("<hr class='divider'>", unsafe_allow_html=True)
-            res_col = st.columns([1, 2, 1])[1]
-            with res_col:
-                st.markdown(
-                    f"<div class='metric-box'><h2>{pred}</h2>"
-                    f"<p>Participaciones estimadas en Bienestar</p></div>",
-                    unsafe_allow_html=True,
-                )
-
-            if "participacion_total" in perfiles.columns:
-                pct = (perfiles["participacion_total"] <= pred).mean() * 100
-                st.info(f"Este valor está por encima del **{pct:.0f}%** de los estudiantes en el histórico.")
-
-                media = perfiles["participacion_total"].mean()
-                fig_pred = px.histogram(
-                    perfiles, x="participacion_total", nbins=40,
-                    labels={"participacion_total": "Participación total"},
-                    title="Tu estimación frente al histórico",
-                    template="plotly_white",
-                    color_discrete_sequence=[C_AZUL_CLARO],
-                )
-                fig_pred.add_vline(
-                    x=pred,
-                    line_color=C_ERROR if pred < media else C_ACENTO,
-                    line_width=3, line_dash="dash",
-                    annotation_text=f"Estimado: {pred}",
-                    annotation_font_color=C_AZUL_SABANA,
-                )
-                sabana_fig(fig_pred)
-                st.plotly_chart(fig_pred, use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -756,7 +556,6 @@ elif page == "🔍 Exploración Interactiva":
     prog_sel = fc4.multiselect("Programa académico", prog_disp,
                                 default=prog_disp[:10] if prog_disp else [])
 
-    # Aplicar filtros
     asist_fil = asistencia[
         (asistencia["ano"] >= ano_range[0]) & (asistencia["ano"] <= ano_range[1])
     ]
@@ -782,7 +581,6 @@ elif page == "🔍 Exploración Interactiva":
     )
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
-    # ── Gráfica 1: por año ────────────────────────────────────────────────────
     st.markdown("#### Participación anual")
     if not asist_fil.empty:
         por_ano = asist_fil.groupby("ano").size().reset_index(name="Registros")
@@ -794,7 +592,6 @@ elif page == "🔍 Exploración Interactiva":
     else:
         st.info("Sin datos con los filtros seleccionados.")
 
-    # ── Gráfica 2: por jefatura ───────────────────────────────────────────────
     if not asist_fil.empty and "jefatura" in asist_fil.columns:
         st.markdown("#### Participación por jefatura")
         por_jef = vc(asist_fil, "jefatura").sort_values("Registros")
@@ -805,7 +602,6 @@ elif page == "🔍 Exploración Interactiva":
         sabana_fig(fig2.update_layout(coloraxis_showscale=False), height=400)
         st.plotly_chart(fig2, use_container_width=True)
 
-    # ── Gráfica 3: scatter individual estudiantes ────────────────────────────
     if PAM_COL in caract_fil.columns and PCP_COL in caract_fil.columns:
         st.markdown("#### Distribución académica de estudiantes seleccionados")
         hover_cols = {c: True for c in ["codigo", "programa_academico_principal", CRED_COL]
@@ -824,7 +620,6 @@ elif page == "🔍 Exploración Interactiva":
         sabana_fig(fig3)
         st.plotly_chart(fig3, use_container_width=True)
 
-    # ── Gráfica 4: distribución de promedios ──────────────────────────────────
     if PAM_COL in caract_fil.columns and PCP_COL in caract_fil.columns:
         st.markdown("#### Distribución de promedios")
         c1, c2 = st.columns(2)
@@ -843,7 +638,6 @@ elif page == "🔍 Exploración Interactiva":
             sabana_fig(fig4b)
             st.plotly_chart(fig4b, use_container_width=True)
 
-    # ── Gráfica 5: por sexo ───────────────────────────────────────────────────
     if "sexo" in caract_fil.columns:
         st.markdown("#### Distribución por sexo")
         por_sexo = vc(caract_fil, "sexo", "Estudiantes")
@@ -853,6 +647,5 @@ elif page == "🔍 Exploración Interactiva":
         sabana_fig(fig5)
         st.plotly_chart(fig5, use_container_width=True)
 
-    # ── Vista previa de datos ─────────────────────────────────────────────────
     with st.expander("Ver datos de asistencia filtrados (primeras 500 filas)"):
         st.dataframe(asist_fil.head(500), use_container_width=True)
